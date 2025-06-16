@@ -1,9 +1,5 @@
-fastapi
-uvicorn
 openai
 python-dotenv
-webrtcvad
-numpy
-jinja2
-python-multipart
 streamlit
+sounddevice
+numpy

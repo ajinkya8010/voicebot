@@ -2,7 +2,7 @@
 __pycache__/
 
 # Ignore virtual environment folder
-.venv/
+venv/
 
 # Ignore the configuration file (if sensitive or environment-specific)
 config.py

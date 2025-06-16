@@ -5,11 +5,9 @@ import wave
 import asyncio
 from tempfile import NamedTemporaryFile
 from openai import AsyncOpenAI
-from dotenv import load_dotenv
 from config import config
 
-# Load environment variables
-load_dotenv()
+
 
 # Set API keys
 openai_client = AsyncOpenAI(api_key=config.get("OPENAI_API_KEY"))

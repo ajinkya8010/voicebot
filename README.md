@@ -26,7 +26,7 @@
 
 5. Run the application:
    ```
-   uvicorn main:app --reload
+   streamlit run app.py
    ```
 
 ## Features
@@ -34,13 +34,6 @@
 - Audio transcription using Groq Whisper
 - AI-powered chat responses
 - Text-to-speech responses
-
-## Technology Stack
-- FastAPI
-- WebRTC VAD
-- OpenAI TTS
-- Groq API
-- WebSocket communication# voice_model_llm
 
 
 
