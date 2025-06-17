@@ -7,8 +7,6 @@ from tempfile import NamedTemporaryFile
 from openai import AsyncOpenAI
 from config import config
 
-
-
 # Set API keys
 openai_client = AsyncOpenAI(api_key=config.get("OPENAI_API_KEY"))
 groq_client = AsyncOpenAI(
@@ -29,7 +27,6 @@ def record_audio(duration=5, samplerate=16000):
     sd.wait()
     return audio
 
-
 def save_audio_to_file(audio, filename="recording.wav", samplerate=16000):
     with wave.open(filename, 'wb') as wf:
         wf.setnchannels(1)  # Mono audio
@@ -37,7 +34,6 @@ def save_audio_to_file(audio, filename="recording.wav", samplerate=16000):
         wf.setframerate(samplerate)
         wf.writeframes(audio.tobytes())
     return filename
-
 
 async def transcribe_audio(audio_file):
     """Transcribe audio using Groq's Whisper model."""
@@ -53,16 +49,12 @@ async def transcribe_audio(audio_file):
         st.error(f"Transcription failed: {str(e)}")
         return None
 
-
-async def get_chat_response(text):
+async def get_chat_response(messages):
     """Get chat response using OpenAI's GPT model."""
     try:
         response = await openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Change the model name here
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": text}
-            ],
+            model="gpt-4o-mini",
+            messages=messages,
             temperature=0.7,
             max_tokens=500
         )
@@ -70,8 +62,6 @@ async def get_chat_response(text):
     except Exception as e:
         st.error(f"Chat response generation failed: {str(e)}")
         return None
-
-
 
 async def generate_speech(text):
     """Generate speech using OpenAI TTS."""
@@ -86,9 +76,36 @@ async def generate_speech(text):
         st.error(f"Speech generation failed: {str(e)}")
         return None
 
+# Initialize chat history
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = [
+        {"role": "system", "content": "You are a friendly and casual person chatting with the user, just like a human would in a natural conversation. Be informal, relaxed, and engaging."}
+    ]
 
 # Streamlit UI
 st.title("🎤 Voice-to-LLM Chat Application")
+
+# Add chat-like container
+with st.expander("🗨️ Conversation History", expanded=True):
+    chat_container = st.container()
+    with chat_container:
+        if len(st.session_state.chat_history) > 1:
+            for msg in st.session_state.chat_history[1:]:
+                if msg["role"] == "user":
+                    st.markdown(
+                        f"""<div style='background-color:#DCF8C6;padding:8px 12px;border-radius:10px;margin:5px 0;max-width:80%;align-self:flex-end;text-align:right;'>
+                        🧑 <strong>You:</strong> {msg['content']}
+                        </div>""",
+                        unsafe_allow_html=True
+                    )
+                elif msg["role"] == "assistant":
+                    st.markdown(
+                        f"""<div style='background-color:#F1F0F0;padding:8px 12px;border-radius:10px;margin:5px 0;max-width:80%;align-self:flex-start;text-align:left;'>
+                        🤖 <strong>Bot:</strong> {msg['content']}
+                        </div>""",
+                        unsafe_allow_html=True
+                    )
+
 
 # Step 1: Record audio
 duration = st.slider("Select Recording Duration (seconds):", min_value=1, max_value=10, value=5)
@@ -105,21 +122,34 @@ if st.button("Record"):
     if transcription:
         st.write(f"**Transcription:** {transcription}")
 
+        # Add user message to chat history
+        st.session_state.chat_history.append({"role": "user", "content": transcription})
+
+        # Keep only last 3 turns (system + 3 pairs)
+        MAX_HISTORY = 7  # system + (user+assistant) * 3
+        if len(st.session_state.chat_history) > MAX_HISTORY:
+            st.session_state.chat_history = [st.session_state.chat_history[0]] + st.session_state.chat_history[-(MAX_HISTORY-1):]
+
         # Step 3: Get chat response
         st.info("Generating chat response...")
-        chat_response = asyncio.run(get_chat_response(transcription))
+        chat_response = asyncio.run(get_chat_response(st.session_state.chat_history))
         if chat_response:
             st.write(f"**Chat Response:** {chat_response}")
+
+            # Add bot message to chat history
+            st.session_state.chat_history.append({"role": "assistant", "content": chat_response})
+
+            # Again trim history if needed
+            if len(st.session_state.chat_history) > MAX_HISTORY:
+                st.session_state.chat_history = [st.session_state.chat_history[0]] + st.session_state.chat_history[-(MAX_HISTORY-1):]
 
             # Step 4: Generate speech
             st.info("Generating audio response...")
             speech_audio = asyncio.run(generate_speech(chat_response))
             if speech_audio:
-                # Save speech audio
                 with NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio_file:
                     temp_audio_file.write(speech_audio)
                     temp_audio_path = temp_audio_file.name
 
-                # Play back generated audio
                 st.audio(temp_audio_path, format="audio/wav")
                 st.success("Audio response generated!")
