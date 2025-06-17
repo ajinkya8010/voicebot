@@ -18,10 +18,12 @@
    pip install -r requirements.txt
    ```
 
-4. Create a `.env` file with your API keys:
+4. Create a `config.py` file with your API keys:
    ```
-   OPENAI_API_KEY=your_openai_key
-   GROQ_API_KEY=your_groq_key
+   config = {
+    "OPENAI_API_KEY": "your-openai-key",
+    "GROQ_API_KEY": "your-groq-key"
+   }
    ```
 
 5. Run the application:
@@ -34,9 +36,7 @@
 - Audio transcription using Groq Whisper
 - AI-powered chat responses
 - Text-to-speech responses
+- History of conversation preserved
 
-
-
-## config file : -> config = {"OPENAI_API_KEY":"","GROQ_API_KEY":""}
 
 
